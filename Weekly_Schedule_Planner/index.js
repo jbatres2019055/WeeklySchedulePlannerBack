@@ -4,7 +4,12 @@ const app = require("./app");
 var port = 3000;
 
 mongoose.Promise = global.Promise
-mongoose.connect('mongodb://localhost:27017/DBWeekly_Schedule_Planner', { useNewUrlParser: true, useUnifiedTopology: true }).then(()=>{
+mongoose.connect('mongodb://localhost:27017/DBWeekly_Schedule_Planner',
+    {useNewUrlParser: true, 
+    useUnifiedTopology: true,
+    useCreateIndex: true,
+    useFindAndModify: false })
+    .then(()=>{
     console.log('Se encuentra conectado a la base de datos');
 
     app.listen(port, function () {

@@ -164,52 +164,71 @@ function updateUser(req, res){
 
 // ----------------------------------------------------------------------------------------------------------------
 
-function removeUser(req, res){
+let removeUser = async(req, res) => {
     let userId = req.params.id;
-    let params = req.body;
+    let { password } = req.body;
 
-
-    if(userId != req.user.sub){
-        return res.send({message: 'No posees permisos necesarios para realizar esta acción'})
-    }else{
-        if(!params.password){
-            return res.status(401).send({message: 'Por favor ingresa la contraseña para poder eliminar tu cuenta'});
-        }else{
-            User.findById(userId, (err, userFind)=>{
-                if(err){
-                    return res.status(500).send({message: 'Error general'})
-                }else if(userFind){
-                    bcrypt.compare(params.password, userFind.password, (err, checkPassword)=>{
-                        if(err){
-                            return res.send({message: 'Error general al verificar contraseña'})
-                        }else if(checkPassword){
-                            User.findByIdAndRemove(userId, (err, userFind)=>{
-                                if(err){
-                                    return res.status(500).send({message: 'Error general al verificar contraseña'})
-                                }else if(userFind){
-                                    Schedule.deleteMany({_id: userFind.schedules}, (err, deleteSchedules)=>{
-                                        if(err){
-                                            return res.status(500).send({message: 'Error general al actualizar'});
-                                        }else if(deleteSchedules){
-                                            return res.send({message: 'Usuario eliminado', userRemoved:userFind})
-                                        }else{
-                                            return res.status(500).send({message: 'no se encontro'});
-                                        }
-                                    })  
-                                }else{
-                                    return res.send({message: 'Usuario no encontrado o ya eliminado'})
-                                }
-                            })
-                        }else{
-                            return res.status(403).send({message: 'Contraseña incorrecta'})
-                        }
-                    })
-                }else{
-                    return res.send({message: 'Usuario inexistente o ya eliminado'})
+    try {
+        if(userId === req.user.sub){
+            let user = await User.findById(userId);
+            if(user){
+                let doesPasswordMatch = await bcrypt.compareSync(password, user.password);
+                if(doesPasswordMatch){
+                    await User.findByIdAndRemove(userId);
+                    await Schedule.deleteMany({userSchedule: userId});
+                    await Homework.deleteMany({userHomework: userId});
+                    return res.json({message: "User deleted correctly"});
                 }
-            })
+            }
         }
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({message: "An error has occured", error});
     }
+
+    // if(userId != req.user.sub){
+    //     return res.send({message: 'No posees permisos necesarios para realizar esta acción'})
+    // }else{
+    //     if(!params.password){
+    //         return res.status(401).send({message: 'Por favor ingresa la contraseña para poder eliminar tu cuenta'});
+    //     }else{
+    //         User.findById(userId, (err, userFind)=>{
+    //             if(err){
+    //                 return res.status(500).send({message: 'Error general'})
+    //             }else if(userFind){
+    //                 bcrypt.compare(params.password, userFind.password, (err, checkPassword)=>{
+    //                     if(err){
+    //                         return res.send({message: 'Error general al verificar contraseña'})
+    //                     }else if(checkPassword){
+    //                         User.findByIdAndRemove(userId, (err, userFind)=>{
+    //                             if(err){
+    //                                 return res.status(500).send({message: 'Error general al verificar contraseña'})
+    //                             }else if(userFind){
+    //                                 Schedule.deleteMany({_id: userFind.schedules}, (err, deleteSchedules)=>{
+    //                                     if(err){
+    //                                         return res.status(500).send({message: 'Error general al actualizar'});
+    //                                     }else if(deleteSchedules){
+    //                                         await Homework.deleteMany({userHomework: userFind._id});
+
+    //                                         return res.send({message: 'Usuario eliminado', userRemoved})
+    //                                     }else{
+    //                                         return res.status(500).send({message: 'no se encontro'});
+    //                                     }
+    //                                 })  
+    //                             }else{
+    //                                 return res.send({message: 'Usuario no encontrado o ya eliminado'})
+    //                             }
+    //                         })
+    //                     }else{
+    //                         return res.status(403).send({message: 'Contraseña incorrecta'})
+    //                     }
+    //                 })
+    //             }else{
+    //                 return res.send({message: 'Usuario inexistente o ya eliminado'})
+    //             }
+    //         })
+    //     }
+    // }
 }
 
 
